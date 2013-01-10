@@ -3,5 +3,6 @@
 
 #include "../src/mocknetwork/mocknetworkglobal.h"
 #include "../src/mocknetwork/mocknetworkaccessmanager.h"
+#include "../src/mocknetwork/imocknetworkaccessmanagerdelegate.h"
 
 #endif

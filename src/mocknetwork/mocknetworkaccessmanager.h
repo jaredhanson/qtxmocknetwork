@@ -8,6 +8,8 @@
 QTX_BEGIN_NAMESPACE
 
 
+class IMockNetworkAccessManagerDelegate;
+
 class MockNetworkAccessManager : public QNetworkAccessManager
 {
     Q_OBJECT
@@ -15,6 +17,14 @@ class MockNetworkAccessManager : public QNetworkAccessManager
 public:
     MockNetworkAccessManager(QObject *parent = 0);
     virtual ~MockNetworkAccessManager();
+    
+    void setDelegate(IMockNetworkAccessManagerDelegate *delegate);
+    
+protected:
+    virtual QNetworkReply *createRequest(Operation op, const QNetworkRequest & req, QIODevice * outgoingData = 0);
+
+private:
+    IMockNetworkAccessManagerDelegate *mDelegate;
 };
 
 
