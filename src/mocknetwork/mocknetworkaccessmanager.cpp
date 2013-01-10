@@ -43,19 +43,17 @@ QNetworkReply *MockNetworkAccessManager::createRequest(Operation op, const QNetw
 {
     Q_D(MockNetworkAccessManager);
     if (d->delegate) {
+        QString scheme = req.url().scheme();
         QIODevice *data = d->delegate->createIncomingData(req);
-        if (data) {
-            QString scheme = req.url().scheme();
-            QNetworkReply *reply = 0;
+        QNetworkReply *reply = 0;
             
-            if ("http" == scheme) {
-                reply = new MockHttpNetworkReply(data, this);
-            }
+        if ("http" == scheme) {
+            reply = new MockHttpNetworkReply(data, this);
+        }
             
-            if (reply) {
-                reply->open(QIODevice::ReadOnly);
-                return reply;
-            }
+        if (reply) {
+            reply->open(QIODevice::ReadOnly);
+            return reply;
         }
     }
 
