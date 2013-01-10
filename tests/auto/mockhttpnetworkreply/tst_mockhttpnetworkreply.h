@@ -19,6 +19,12 @@ private slots:
     void ok();
     void multipleChoices();
     void found();
+    void badRequest();
+    void unauthorized();
+    void forbidden();
+    void notFound();
+    void methodNotAllowed();
+    void proxyAuthenticationRequired();
     void internalServerError();
     void notImplemented();
     

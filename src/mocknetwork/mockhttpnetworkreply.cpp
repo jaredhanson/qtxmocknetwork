@@ -189,9 +189,28 @@ void MockHttpNetworkReplyPrivate::parse()
     emit q->metaDataChanged();
     emit q->readyRead();
     
-    if (statusCode / 100 == 5) {
+    if (statusCode / 100 == 4) {
         switch (statusCode) {
-        case 500:
+        case 401: // Unauthorized
+            emit q->error(QNetworkReply::AuthenticationRequiredError);
+            break;
+        case 403: // Forbidden
+        case 405: // Method Not Allowed
+            emit q->error(QNetworkReply::ContentOperationNotPermittedError);
+            break;
+        case 404: // Not Found
+            emit q->error(QNetworkReply::ContentNotFoundError);
+            break;
+        case 407: // Proxy Authentication Required
+            emit q->error(QNetworkReply::ProxyAuthenticationRequiredError);
+            break;
+        default:
+            emit q->error(QNetworkReply::UnknownContentError);
+            break;
+        }
+    } else if (statusCode / 100 == 5) {
+        switch (statusCode) {
+        case 500: // Internal Server Error
             emit q->error(QNetworkReply::UnknownContentError);
             break;
         default:

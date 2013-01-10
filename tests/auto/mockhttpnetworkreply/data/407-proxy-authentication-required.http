@@ -1,0 +1,4 @@
+HTTP/1.0 407 Proxy Authentication Required
+Content-Type: application/json
+
+{ "error": "something went wrong" }
