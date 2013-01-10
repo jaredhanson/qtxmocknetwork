@@ -1,0 +1,5 @@
+HTTP/1.0 302 Found
+Location: http://www.example.com/goto.html
+Content-Type: application/json
+
+{ "redirect": true }

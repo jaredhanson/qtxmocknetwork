@@ -179,7 +179,7 @@ void MockHttpNetworkReplyPrivate::parse()
         value = header.mid(idy + 2);
         q->setRawHeader(field, value);
         
-        if ((QString::fromUtf8(field) == "Location") && (statusCode / 100 == 3)) {
+        if ((QString::fromUtf8(field) == "Location") && (statusCode == 301 || statusCode == 302 || statusCode == 307)) {
             q->setAttribute(QNetworkRequest::RedirectionTargetAttribute, QUrl(QString::fromUtf8(value)));
         }
 

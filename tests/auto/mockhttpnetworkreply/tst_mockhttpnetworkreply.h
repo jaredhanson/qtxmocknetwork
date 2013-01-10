@@ -17,6 +17,8 @@ private slots:
     void cleanup();
     
     void ok();
+    void multipleChoices();
+    void found();
     void internalServerError();
     void notImplemented();
     
