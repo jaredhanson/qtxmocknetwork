@@ -8,6 +8,8 @@
 QTX_BEGIN_NAMESPACE
 
 
+class MockHttpNetworkReplyPrivate;
+
 class MockHttpNetworkReply : public QNetworkReply
 {
     Q_OBJECT
@@ -28,16 +30,10 @@ protected:
 private slots:
     void doReceive();
     
+protected:
+    MockHttpNetworkReplyPrivate *d_ptr;
 private:
-    void parse();
-    
-private:
-    QIODevice *mDevice;
-    
-    QString mVersion;
-    quint16 mStatusCode;
-    QString mReasonPhrase;
-    QByteArray mBuffer;
+    Q_DECLARE_PRIVATE(MockHttpNetworkReply);
 };
 
 

@@ -3,21 +3,49 @@
 QTX_BEGIN_NAMESPACE
 
 
+class MockHttpNetworkReplyPrivate
+{
+public:
+    MockHttpNetworkReplyPrivate(MockHttpNetworkReply *q);
+    virtual ~MockHttpNetworkReplyPrivate();
+    
+    void receive();
+    void parse();
+    
+    qint64 readData(char *data, qint64 maxSize);
+    qint64 writeData(const char *data, qint64 maxSize);
+    
+public:
+    MockHttpNetworkReply *q_ptr;
+    Q_DECLARE_PUBLIC(MockHttpNetworkReply);
+    
+    QIODevice *device;
+    
+    QString version;
+    quint16 statusCode;
+    QString reasonPhrase;
+    QByteArray buffer;
+};
+
+
 MockHttpNetworkReply::MockHttpNetworkReply(QIODevice *device, QObject *parent /* = 0 */)
     : QNetworkReply(parent),
-      mDevice(device)
+      d_ptr(new MockHttpNetworkReplyPrivate(this))
 {
-    mDevice->setParent(this);
+    device->setParent(this);
+    d_ptr->device = device;
 }
 
 MockHttpNetworkReply::~MockHttpNetworkReply()
 {
+    if (d_ptr) {
+        delete d_ptr;
+        d_ptr = 0;
+    }
 }
 
 bool MockHttpNetworkReply::open(OpenMode mode)
 {
-    qDebug() << "MockHttpNetworkReply::open";
-
     QMetaObject::invokeMethod(this, "doReceive", Qt::QueuedConnection);
     return QIODevice::open(mode);
 }
@@ -28,44 +56,74 @@ void MockHttpNetworkReply::abort()
 
 void MockHttpNetworkReply::doReceive()
 {
-    qDebug() << "MockHttpNetworkReply::doReceive()";
-    
-    mBuffer = mDevice->readAll();
+    Q_D(MockHttpNetworkReply);
+    d->receive();
+}
+
+qint64 MockHttpNetworkReply::readData(char *data, qint64 maxSize)
+{
+    Q_D(MockHttpNetworkReply);
+    return d->readData(data, maxSize);
+}
+
+qint64 MockHttpNetworkReply::writeData(const char *data, qint64 maxSize)
+{
+    Q_D(MockHttpNetworkReply);
+    return d->writeData(data, maxSize);
+}
+
+
+MockHttpNetworkReplyPrivate::MockHttpNetworkReplyPrivate(MockHttpNetworkReply *q)
+    : q_ptr(q),
+      device(0)
+{
+}
+
+MockHttpNetworkReplyPrivate::~MockHttpNetworkReplyPrivate()
+{
+    device = 0;
+}
+
+void MockHttpNetworkReplyPrivate::receive()
+{
+    buffer = device->readAll();
     parse();
 }
 
-void MockHttpNetworkReply::parse()
+void MockHttpNetworkReplyPrivate::parse()
 {
-    int idx = mBuffer.indexOf("\r\n");
+    Q_Q(MockHttpNetworkReply);
+
+    int idx = buffer.indexOf("\r\n");
                 
     // The response is invalid, due to the absence of a delimiter signalling the
     // end of the status line.
     if (-1 == idx)
     {
-        emit error(QNetworkReply::ProtocolFailure);
+        emit q->error(QNetworkReply::ProtocolFailure);
         return;
     }
             
             
-    QByteArray status_line = mBuffer.left(idx);
-    mBuffer.remove(0, idx + 2);
+    QByteArray status_line = buffer.left(idx);
+    buffer.remove(0, idx + 2);
 
     // Parse out the HTTP version. If the space character, which separates it
     // from the status code, is not found, then the response is invalid.
     idx = status_line.indexOf(' ');
     if (-1 == idx)
     {
-        emit error(QNetworkReply::ProtocolFailure);
+        emit q->error(QNetworkReply::ProtocolFailure);
         return;
     }
 
     if (!status_line.startsWith("HTTP/"))
     {
-        emit error(QNetworkReply::ProtocolFailure);
+        emit q->error(QNetworkReply::ProtocolFailure);
         return;
     }
             
-    mVersion = QString::fromUtf8(status_line.mid(5, idx - 5));
+    version = QString::fromUtf8(status_line.mid(5, idx - 5));
     status_line.remove(0, idx + 1);
 
     // Parse out the status code. If the space character, which separates it
@@ -73,91 +131,85 @@ void MockHttpNetworkReply::parse()
     idx = status_line.indexOf(' ');
     if (-1 == idx)
     {
-        emit error(QNetworkReply::ProtocolFailure);
+        emit q->error(QNetworkReply::ProtocolFailure);
         return;
     }
             
-    mStatusCode = QString::fromUtf8(status_line.left(idx)).toInt();
+    statusCode = QString::fromUtf8(status_line.left(idx)).toInt();
     status_line.remove(0, idx + 1);
     
-    setAttribute(QNetworkRequest::HttpStatusCodeAttribute, mStatusCode);
+    q->setAttribute(QNetworkRequest::HttpStatusCodeAttribute, statusCode);
 
     // The remainder of the status line consists of the reason phrase.
-    mReasonPhrase = status_line;
+    reasonPhrase = status_line;
 
 
-    idx = mBuffer.indexOf("\r\n\r\n");
+    idx = buffer.indexOf("\r\n\r\n");
             
     // The response is invalid, due to the absence of a delimiter signalling the
     // end of the headers.
     if (-1 == idx)
     {
-        emit error(QNetworkReply::ProtocolFailure);
+        emit q->error(QNetworkReply::ProtocolFailure);
         return;
     }
     
-    while (mBuffer.size() > 0)
+    while (buffer.size() > 0)
     {
-        idx = mBuffer.indexOf("\r\n");
+        idx = buffer.indexOf("\r\n");
 
         // The parser has encountered the end of headers.  The remainder of the
         // buffer is the body of the message.
         if (0 == idx)
         {
-            mBuffer.remove(0, idx + 2);
+            buffer.remove(0, idx + 2);
             break;
         }
 
-        QByteArray header = mBuffer.left(idx);
+        QByteArray header = buffer.left(idx);
         QByteArray field;
         QByteArray value;
 
         int idy = header.indexOf(':');
         if (-1 == idy)
         {
-            emit error(QNetworkReply::ProtocolFailure);
+            emit q->error(QNetworkReply::ProtocolFailure);
             return;
         }
         
         field = header.left(idy);
         value = header.mid(idy + 2);
         
-        setRawHeader(field, value);
+        q->setRawHeader(field, value);
         
         if (QString::fromUtf8(field) == "Location") {
-            setAttribute(QNetworkRequest::RedirectionTargetAttribute, QUrl(QString::fromUtf8(value)));
+            q->setAttribute(QNetworkRequest::RedirectionTargetAttribute, QUrl(QString::fromUtf8(value)));
         }
 
-        mBuffer.remove(0, idx + 2);
+        buffer.remove(0, idx + 2);
     }
 
-    emit readyRead();
+    emit q->readyRead();
 }
 
-qint64 MockHttpNetworkReply::readData(char *data, qint64 maxSize)
+qint64 MockHttpNetworkReplyPrivate::readData(char *data, qint64 maxSize)
 {
-    //qDebug() << "MockHttpNetworkReply::readData()";
-    //qDebug() << "  maxSize: " << maxSize;
-    
-    if (mBuffer.size() == 0)
+    if (buffer.size() == 0)
         return -1;
 
     qint64 size = maxSize;
-    if (mBuffer.size() < maxSize)
-        size = mBuffer.size();
+    if (buffer.size() < maxSize)
+        size = buffer.size();
 
-    memcpy(data, mBuffer.data(), size);
-    mBuffer.remove(0, size);
-
+    memcpy(data, buffer.data(), size);
+    buffer.remove(0, size);
     return size;
 }
 
-qint64 MockHttpNetworkReply::writeData(const char *data, qint64 maxSize)
+qint64 MockHttpNetworkReplyPrivate::writeData(const char *data, qint64 maxSize)
 {
     Q_UNUSED(data)
     Q_UNUSED(maxSize)
-
-    //qDebug() << "MockHttpNetworkReply::writeData()";
 
     return -1;
 }
