@@ -1,0 +1,7 @@
+#ifndef QTXMOCKNETWORK_MODULE_H
+#define QTXMOCKNETWORK_MODULE_H
+
+#include "../src/mocknetwork/mocknetworkglobal.h"
+#include "../src/mocknetwork/mocknetworkaccessmanager.h"
+
+#endif
