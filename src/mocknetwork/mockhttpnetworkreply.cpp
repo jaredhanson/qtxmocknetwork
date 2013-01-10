@@ -20,10 +20,6 @@ public:
     Q_DECLARE_PUBLIC(MockHttpNetworkReply);
     
     QIODevice *device;
-    
-    QString version;
-    quint16 statusCode;
-    QString reasonPhrase;
     QByteArray buffer;
 };
 
@@ -93,75 +89,72 @@ void MockHttpNetworkReplyPrivate::receive()
 void MockHttpNetworkReplyPrivate::parse()
 {
     Q_Q(MockHttpNetworkReply);
+    
+    QString version;
+    quint16 statusCode;
+    QString reasonPhrase;
+    
 
     int idx = buffer.indexOf("\r\n");
                 
     // The response is invalid, due to the absence of a delimiter signalling the
     // end of the status line.
-    if (-1 == idx)
-    {
+    if (-1 == idx) {
         emit q->error(QNetworkReply::ProtocolFailure);
         return;
     }
             
             
-    QByteArray status_line = buffer.left(idx);
+    QByteArray statusLine = buffer.left(idx);
     buffer.remove(0, idx + 2);
 
     // Parse out the HTTP version. If the space character, which separates it
     // from the status code, is not found, then the response is invalid.
-    idx = status_line.indexOf(' ');
-    if (-1 == idx)
-    {
+    idx = statusLine.indexOf(' ');
+    if (-1 == idx) {
         emit q->error(QNetworkReply::ProtocolFailure);
         return;
     }
-
-    if (!status_line.startsWith("HTTP/"))
-    {
+    if (!statusLine.startsWith("HTTP/")) {
         emit q->error(QNetworkReply::ProtocolFailure);
         return;
     }
             
-    version = QString::fromUtf8(status_line.mid(5, idx - 5));
-    status_line.remove(0, idx + 1);
+    version = QString::fromUtf8(statusLine.mid(5, idx - 5));
+    statusLine.remove(0, idx + 1);
 
     // Parse out the status code. If the space character, which separates it
     // from the reason phrase, is not found, then the request is invalid.
-    idx = status_line.indexOf(' ');
-    if (-1 == idx)
-    {
+    idx = statusLine.indexOf(' ');
+    if (-1 == idx) {
         emit q->error(QNetworkReply::ProtocolFailure);
         return;
     }
             
-    statusCode = QString::fromUtf8(status_line.left(idx)).toInt();
-    status_line.remove(0, idx + 1);
-    
+    statusCode = QString::fromUtf8(statusLine.left(idx)).toInt();
+    statusLine.remove(0, idx + 1);
     q->setAttribute(QNetworkRequest::HttpStatusCodeAttribute, statusCode);
 
     // The remainder of the status line consists of the reason phrase.
-    reasonPhrase = status_line;
+    reasonPhrase = statusLine;
+    q->setAttribute(QNetworkRequest::HttpReasonPhraseAttribute, reasonPhrase);
 
 
     idx = buffer.indexOf("\r\n\r\n");
             
     // The response is invalid, due to the absence of a delimiter signalling the
     // end of the headers.
-    if (-1 == idx)
-    {
+    if (-1 == idx) {
         emit q->error(QNetworkReply::ProtocolFailure);
         return;
     }
     
-    while (buffer.size() > 0)
-    {
+    while (buffer.size() > 0) {
         idx = buffer.indexOf("\r\n");
 
         // The parser has encountered the end of headers.  The remainder of the
         // buffer is the body of the message.
-        if (0 == idx)
-        {
+        if (0 == idx) {
             buffer.remove(0, idx + 2);
             break;
         }
@@ -171,25 +164,30 @@ void MockHttpNetworkReplyPrivate::parse()
         QByteArray value;
 
         int idy = header.indexOf(':');
-        if (-1 == idy)
-        {
+        if (-1 == idy) {
             emit q->error(QNetworkReply::ProtocolFailure);
             return;
         }
         
         field = header.left(idy);
         value = header.mid(idy + 2);
-        
         q->setRawHeader(field, value);
         
-        if (QString::fromUtf8(field) == "Location") {
+        if ((QString::fromUtf8(field) == "Location") && (statusCode / 100 == 3)) {
             q->setAttribute(QNetworkRequest::RedirectionTargetAttribute, QUrl(QString::fromUtf8(value)));
         }
 
         buffer.remove(0, idx + 2);
     }
 
+    emit q->metaDataChanged();
     emit q->readyRead();
+    
+    if (statusCode / 100 == 5) {
+       emit q->error(QNetworkReply::UnknownContentError);
+    }
+    
+    emit q->finished();
 }
 
 qint64 MockHttpNetworkReplyPrivate::readData(char *data, qint64 maxSize)
