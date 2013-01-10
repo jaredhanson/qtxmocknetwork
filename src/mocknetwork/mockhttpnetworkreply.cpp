@@ -101,6 +101,7 @@ void MockHttpNetworkReplyPrivate::parse()
     // end of the status line.
     if (-1 == idx) {
         emit q->error(QNetworkReply::ProtocolFailure);
+        emit q->finished();
         return;
     }
             
@@ -113,10 +114,12 @@ void MockHttpNetworkReplyPrivate::parse()
     idx = statusLine.indexOf(' ');
     if (-1 == idx) {
         emit q->error(QNetworkReply::ProtocolFailure);
+        emit q->finished();
         return;
     }
     if (!statusLine.startsWith("HTTP/")) {
         emit q->error(QNetworkReply::ProtocolFailure);
+        emit q->finished();
         return;
     }
             
@@ -128,6 +131,7 @@ void MockHttpNetworkReplyPrivate::parse()
     idx = statusLine.indexOf(' ');
     if (-1 == idx) {
         emit q->error(QNetworkReply::ProtocolFailure);
+        emit q->finished();
         return;
     }
             
@@ -146,6 +150,7 @@ void MockHttpNetworkReplyPrivate::parse()
     // end of the headers.
     if (-1 == idx) {
         emit q->error(QNetworkReply::ProtocolFailure);
+        emit q->finished();
         return;
     }
     
@@ -166,6 +171,7 @@ void MockHttpNetworkReplyPrivate::parse()
         int idy = header.indexOf(':');
         if (-1 == idy) {
             emit q->error(QNetworkReply::ProtocolFailure);
+            emit q->finished();
             return;
         }
         

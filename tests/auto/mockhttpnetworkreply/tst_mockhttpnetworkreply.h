@@ -19,13 +19,7 @@ private slots:
     void ok();
     void internalServerError();
     
-    /*
-    void sampleUpdates();
-    
-    void plainTextResponse();
-    
-    void unconfiguredUrl();
-    */
+    void invalidProtocol();
     
 private:
     QEventLoop mEventLoop;
