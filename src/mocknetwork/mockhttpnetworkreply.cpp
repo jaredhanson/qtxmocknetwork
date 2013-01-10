@@ -28,8 +28,10 @@ MockHttpNetworkReply::MockHttpNetworkReply(QIODevice *device, QObject *parent /*
     : QNetworkReply(parent),
       d_ptr(new MockHttpNetworkReplyPrivate(this))
 {
-    device->setParent(this);
-    d_ptr->device = device;
+    if (device) {
+        device->setParent(this);
+        d_ptr->device = device;
+    }
 }
 
 MockHttpNetworkReply::~MockHttpNetworkReply()
@@ -82,6 +84,13 @@ MockHttpNetworkReplyPrivate::~MockHttpNetworkReplyPrivate()
 
 void MockHttpNetworkReplyPrivate::receive()
 {
+    if (!device) {
+        Q_Q(MockHttpNetworkReply);
+        emit q->error(QNetworkReply::ConnectionRefusedError);
+        emit q->finished();
+        return;
+    }
+
     buffer = device->readAll();
     parse();
 }

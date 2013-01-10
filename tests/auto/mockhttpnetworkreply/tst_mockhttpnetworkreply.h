@@ -29,6 +29,7 @@ private slots:
     void notImplemented();
     
     void invalidProtocol();
+    void connectionRefused();
     
 private:
     QEventLoop mEventLoop;
