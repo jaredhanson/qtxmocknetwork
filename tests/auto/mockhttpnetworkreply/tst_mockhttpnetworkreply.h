@@ -18,6 +18,7 @@ private slots:
     
     void ok();
     void internalServerError();
+    void notImplemented();
     
     void invalidProtocol();
     

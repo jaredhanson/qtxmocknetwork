@@ -1,0 +1,4 @@
+HTTP/1.0 501 Not Implemented
+Content-Type: application/json
+
+{ "error": "something went wrong" }

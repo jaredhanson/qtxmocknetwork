@@ -190,7 +190,14 @@ void MockHttpNetworkReplyPrivate::parse()
     emit q->readyRead();
     
     if (statusCode / 100 == 5) {
-       emit q->error(QNetworkReply::UnknownContentError);
+        switch (statusCode) {
+        case 500:
+            emit q->error(QNetworkReply::UnknownContentError);
+            break;
+        default:
+            emit q->error(QNetworkReply::ProtocolUnknownError);
+            break;
+        }
     }
     
     emit q->finished();

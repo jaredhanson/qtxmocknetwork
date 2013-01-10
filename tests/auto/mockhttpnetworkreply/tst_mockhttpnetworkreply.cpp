@@ -76,6 +76,34 @@ void tst_MockHttpNetworkReply::internalServerError()
     QCOMPARE(QString::fromUtf8(mReply->readAll()), QString("{ \"error\": \"something went wrong\" }"));
 }
 
+void tst_MockHttpNetworkReply::notImplemented()
+{
+    QFile file("data/501-not-implemented.http");
+    file.open(QIODevice::ReadOnly);
+    
+    mReply = new MockHttpNetworkReply(&file);
+    connect(mReply, SIGNAL(finished()), SLOT(onFinished()));
+    connect(mReply, SIGNAL(error(QNetworkReply::NetworkError)), SLOT(onError(QNetworkReply::NetworkError)));
+    
+    QSignalSpy metaDataChangedSpy(mReply, SIGNAL(metaDataChanged()));
+    QSignalSpy finishedSpy(mReply, SIGNAL(finished()));
+    QSignalSpy errorSpy(mReply, SIGNAL(error(QNetworkReply::NetworkError)));
+    QList<QVariant> arguments;
+    
+    mReply->open(QIODevice::ReadOnly);
+    mEventLoop.exec();
+    
+    QVERIFY(metaDataChangedSpy.count() == 1);
+    QVERIFY(errorSpy.count() == 1);
+    arguments = errorSpy.takeFirst();
+    QVERIFY(arguments.at(0).toInt() == QNetworkReply::ProtocolUnknownError);
+    QVERIFY(finishedSpy.count() == 1);
+    QCOMPARE(mReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), 501);
+    QCOMPARE(mReply->attribute(QNetworkRequest::HttpReasonPhraseAttribute).toString(), QString("Not Implemented"));
+    QCOMPARE(QString::fromUtf8(mReply->rawHeader("Content-Type")), QString("application/json"));
+    QCOMPARE(QString::fromUtf8(mReply->readAll()), QString("{ \"error\": \"something went wrong\" }"));
+}
+
 void tst_MockHttpNetworkReply::invalidProtocol()
 {
     QFile file("data/invalid.fuzz");
