@@ -15,7 +15,6 @@ public:
     MockNetworkAccessManager *q_ptr;
     Q_DECLARE_PUBLIC(MockNetworkAccessManager);
     
-    QList<QNetworkReply *> replies;
     IMockNetworkAccessManagerDelegate* delegate;
 };
 
@@ -53,25 +52,12 @@ QNetworkReply *MockNetworkAccessManager::createRequest(Operation op, const QNetw
         }
             
         if (reply) {
-            connect(reply, SIGNAL(finished()), SLOT(onReplyFinished()));
-            
-            d->replies.append(reply);
             reply->open(QIODevice::ReadOnly);
             return reply;
         }
     }
 
     return QNetworkAccessManager::createRequest(op, req, outgoingData);
-}
-
-void MockNetworkAccessManager::onReplyFinished()
-{
-    QNetworkReply* reply = qobject_cast<QNetworkReply *>(sender());
-    if (!reply) { return; }
-    
-    Q_D(MockNetworkAccessManager);
-    d->replies.removeOne(reply);
-    reply->deleteLater();
 }
 
 
