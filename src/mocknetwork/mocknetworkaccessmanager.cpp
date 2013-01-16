@@ -41,6 +41,12 @@ void MockNetworkAccessManager::setDelegate(IMockNetworkAccessManagerDelegate *de
 
 QNetworkReply *MockNetworkAccessManager::createRequest(Operation op, const QNetworkRequest & req, QIODevice * outgoingData /* = 0 */)
 {
+    if (outgoingData) {
+        if (!outgoingData->isOpen()) {
+            outgoingData->open(QIODevice::ReadOnly);
+        }
+    }
+
     Q_D(MockNetworkAccessManager);
     if (d->delegate) {
         QString scheme = req.url().scheme();
