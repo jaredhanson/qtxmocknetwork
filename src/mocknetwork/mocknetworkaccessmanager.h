@@ -24,6 +24,9 @@ public:
 protected:
     virtual QNetworkReply *createRequest(Operation op, const QNetworkRequest & req, QIODevice * outgoingData = 0);
 
+private slots:
+    void onReplyFinished();
+
 protected:
     MockNetworkAccessManagerPrivate *d_ptr;
 private:
