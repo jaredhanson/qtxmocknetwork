@@ -44,7 +44,7 @@ QNetworkReply *MockNetworkAccessManager::createRequest(Operation op, const QNetw
     Q_D(MockNetworkAccessManager);
     if (d->delegate) {
         QString scheme = req.url().scheme();
-        QIODevice *data = d->delegate->createIncomingData(req);
+        QIODevice *data = d->delegate->createIncomingData(req, outgoingData);
         QNetworkReply *reply = 0;
             
         if ("http" == scheme) {

@@ -12,7 +12,7 @@ class IMockNetworkAccessManagerDelegate
 public:
     virtual ~IMockNetworkAccessManagerDelegate() {};
         
-    virtual QIODevice *createIncomingData(const QNetworkRequest & req) = 0;
+    virtual QIODevice *createIncomingData(const QNetworkRequest & req, QIODevice * outgoingData = 0) = 0;
 };
 
 
